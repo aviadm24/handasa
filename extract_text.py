@@ -9,7 +9,8 @@ import os
 from bs4 import BeautifulSoup
 import winsound
 from datetime import datetime
-
+import pickle
+DATE_FORMAT = '%d/%m/%Y'
 frequency = 2500  # Set Frequency To 2500 Hertz
 duration = 1000  # Set Duration To 1000 ms == 1 second
 
@@ -26,11 +27,15 @@ eruim_list = ['מסירת היתר בניה !', 'בהכנה לוועדה', 'תכ
               'שולם היטל השבחה', 'הוכנה שומת השבחה', 'הפקת נוסח פרסום לפי סעיף 149 - הקלה',
               'הפקת נוסח פרסום-תמ"א 38 / הקלה', 'פתיחת תיק', 'הוגשה תכנית מתוקנת', 'ישיבת ועדת משנה']
 
-year_dict = {'2016': 512,
-             '2017': 538,
-             '2018': 486,
-             '2019': 487,
-             '2020': 317}
+reader = csv.DictReader(open("year_tochniyot.csv", 'r'))
+for row in reader:
+    year_dict = row
+print([i for i in year_dict.keys()])
+# year_dict = {'2016': 512,
+#              '2017': 538,
+#              '2018': 486,
+#              '2019': 487,
+#              '2020': 317}
 
 
 def textOrInnerHtmlByXpath(browser, xpath):
@@ -56,7 +61,7 @@ def main():
                           '//*[@id="table-gushim-helkot"]', '//*[@id="table-events"]']
     dfToExcel = pd.DataFrame(columns=table_elements_list + eruim_list)
 
-
+    got_heter_list = []
     # soup = BeautifulSoup(html_content)
     log_file_path = 'log.txt'
     for year in year_dict.keys():
@@ -158,28 +163,31 @@ def main():
                     with open(log_file_path, 'a') as f:
                         f.write('{} - {} - {}'.format(year, file, elem))
                     winsound.Beep(frequency, duration)
-
+            if pd.notna(row_list[9]):
+                got_heter_list.append(file.split('.')[0])
             to_append = row_list
             df_length = len(dfToExcel)
             dfToExcel.loc[df_length] = to_append
     file_date = str(datetime.today().date())
     writer = pd.ExcelWriter('ramat_gan_{}.xlsx'.format(file_date), engine='xlsxwriter')
     dfToExcel = dfToExcel.replace('', np.nan)
-    dfToExcel['תאריך הגשה'] = pd.to_datetime(dfToExcel['תאריך הגשה'], format='%d/%m/%Y')
-    dfToExcel['מסירת היתר בניה !'] = pd.to_datetime(dfToExcel['מסירת היתר בניה !'], format='%d/%m/%Y')
-    dfToExcel['בהכנה לוועדה'] = pd.to_datetime(dfToExcel['בהכנה לוועדה'], format='%d/%m/%Y')
-    dfToExcel['תכנית (גרמושקה) הוחזרה לרישוי'] = pd.to_datetime(dfToExcel['תכנית (גרמושקה) הוחזרה לרישוי'], format='%d/%m/%Y')
-    dfToExcel['פתיחת תיק במערכת השבחה'] = pd.to_datetime(dfToExcel['פתיחת תיק במערכת השבחה'], format='%d/%m/%Y')
-    dfToExcel['הועבר להשבחה'] = pd.to_datetime(dfToExcel['הועבר להשבחה'], format='%d/%m/%Y')
-    dfToExcel['שולם היטל השבחה'] = pd.to_datetime(dfToExcel['שולם היטל השבחה'], format='%d/%m/%Y')
-    dfToExcel['הוכנה שומת השבחה'] = pd.to_datetime(dfToExcel['הוכנה שומת השבחה'], format='%d/%m/%Y')
-    dfToExcel['הפקת נוסח פרסום לפי סעיף 149 - הקלה'] = pd.to_datetime(dfToExcel['הפקת נוסח פרסום לפי סעיף 149 - הקלה'], format='%d/%m/%Y')
-    dfToExcel['הפקת נוסח פרסום-תמ"א 38 / הקלה'] = pd.to_datetime(dfToExcel['הפקת נוסח פרסום-תמ"א 38 / הקלה'], format='%d/%m/%Y')
-    dfToExcel['פתיחת תיק'] = pd.to_datetime(dfToExcel['פתיחת תיק'], format='%d/%m/%Y')
-    dfToExcel['הוגשה תכנית מתוקנת'] = pd.to_datetime(dfToExcel['הוגשה תכנית מתוקנת'], format='%d/%m/%Y')
-    dfToExcel['ישיבת ועדת משנה'] = pd.to_datetime(dfToExcel['ישיבת ועדת משנה'], format='%d/%m/%Y')
+    dfToExcel['תאריך הגשה'] = pd.to_datetime(dfToExcel['תאריך הגשה'], format=DATE_FORMAT)
+    dfToExcel['מסירת היתר בניה !'] = pd.to_datetime(dfToExcel['מסירת היתר בניה !'], format=DATE_FORMAT)
+    dfToExcel['בהכנה לוועדה'] = pd.to_datetime(dfToExcel['בהכנה לוועדה'], format=DATE_FORMAT)
+    dfToExcel['תכנית (גרמושקה) הוחזרה לרישוי'] = pd.to_datetime(dfToExcel['תכנית (גרמושקה) הוחזרה לרישוי'], format=DATE_FORMAT)
+    dfToExcel['פתיחת תיק במערכת השבחה'] = pd.to_datetime(dfToExcel['פתיחת תיק במערכת השבחה'], format=DATE_FORMAT)
+    dfToExcel['הועבר להשבחה'] = pd.to_datetime(dfToExcel['הועבר להשבחה'], format=DATE_FORMAT)
+    dfToExcel['שולם היטל השבחה'] = pd.to_datetime(dfToExcel['שולם היטל השבחה'], format=DATE_FORMAT)
+    dfToExcel['הוכנה שומת השבחה'] = pd.to_datetime(dfToExcel['הוכנה שומת השבחה'], format=DATE_FORMAT)
+    dfToExcel['הפקת נוסח פרסום לפי סעיף 149 - הקלה'] = pd.to_datetime(dfToExcel['הפקת נוסח פרסום לפי סעיף 149 - הקלה'], format=DATE_FORMAT)
+    dfToExcel['הפקת נוסח פרסום-תמ"א 38 / הקלה'] = pd.to_datetime(dfToExcel['הפקת נוסח פרסום-תמ"א 38 / הקלה'], format=DATE_FORMAT)
+    dfToExcel['פתיחת תיק'] = pd.to_datetime(dfToExcel['פתיחת תיק'], format=DATE_FORMAT)
+    dfToExcel['הוגשה תכנית מתוקנת'] = pd.to_datetime(dfToExcel['הוגשה תכנית מתוקנת'], format=DATE_FORMAT)
+    dfToExcel['ישיבת ועדת משנה'] = pd.to_datetime(dfToExcel['ישיבת ועדת משנה'], format=DATE_FORMAT)
 
     dfToExcel.to_excel(writer, sheet_name='Sheet1')
     writer.save()
-
+    with open('{}/got_heter_list.pkl'.format(year), 'wb') as f:
+        pickle.dump(got_heter_list, f)
+    print(got_heter_list)
 main()
